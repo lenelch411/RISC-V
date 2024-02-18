@@ -3,7 +3,7 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date: 14.09.2023 13:33:11
+// Create Date: 14.09.2023 15:00:18
 // Design Name: 
 // Module Name: fulladder
 // Project Name: 
@@ -21,12 +21,13 @@
 
 
 module fulladder(
-    input logic a,
-    input logic b,
-    input logic cin,
-    output logic sum,
-    output logic cout
+    input  logic [31:0] a_i,
+    input  logic [31:0] b_i,
+    input  logic        carry_i,
+    output logic [31:0] sum_o,
+    output logic        carry_o
 );
-assign sum = (a ^ b) ^ cin;
-assign cout = ((a & b)|(a & cin))|(b & cin);
+    assign sum_o = a_i^b_i^carry_i;
+    assign carry_o = a_i&b_i|carry_i&a_i|b_i&carry_i;
+    
 endmodule

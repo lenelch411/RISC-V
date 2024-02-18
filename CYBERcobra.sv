@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date: 16.09.2023 23:33:25
+// Create Date: 28.09.2023 00:59:20
 // Design Name: 
-// Module Name: cybercobra
+// Module Name: CYBERcobra
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -19,67 +19,96 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
+module CYBERcobra(
+input logic clk_i,
+input logic rst_i,
+input logic [15:0] sw_i,
+output logic [31:0] out_o
+    );
+    logic [31:0] read_data_o;
+    
+    logic [31:0] PC_o;
+    logic [31:0] res;
 
-module CYBERcobra (
-  input  logic         clk_i,
-  input  logic         rst_i,
-  input  logic [15:0]  sw_i,
-  output logic [31:0]  out_o
-);
+    logic [31:0] read_data1_o ;
+    logic [31:0] read_data2_o ;
+    logic [31:0] result_o ;
+    logic [4:0]  alu_op_i;
+    logic        flag_o;
+    logic        write_enable_i;
+    
+    
+    logic [31:0] b;
+    logic [31:0] ws;
+    
+    assign write_enable_i = ~(read_data_o[30] || read_data_o[31]);
+    
+    assign out_o = read_data1_o;
 
-logic [31:0] a_to_rd1;
-logic [31:0] b_to_rd2;
-logic [31:0] res_to_wd1;
-logic [31:0] wdi;
-
-logic [31:0] PC;
-logic [31:0] read_data_o;
-
-logic [31:0] B;
-logic flag_o;
-
-always_comb begin
-    case(read_data_o[30] && flag_o || read_data_o[31])
-        0: B <= 32'd4;
-        1: B <= {{22{read_data_o[12]}}, read_data_o[12:5], 2'b0};
-    endcase
-end
-
- always_ff @(posedge clk_i) begin
-    if (rst_i)
-        PC <= 0;
-    else 
-        PC <= PC + B;
- end
-
-always_comb begin
+    
+    always_comb 
+    begin
     case(read_data_o[29:28])
-    0: wdi <= {{9{read_data_o[27]}}, read_data_o[27:5]};
-    1: wdi <= res_to_wd1;
-    2: wdi <= {{16{sw_i[15]}}, sw_i[15:0]};
-    3: wdi <= 0;
+    2'b00 : ws <= { {9{read_data_o[27]}} , read_data_o[27:5] };
+    2'b01 : ws <= result_o;
+    2'b10 : ws <={ {16{sw_i[15]}} , sw_i[15:0] };
+    2'b11 : ws <=32'd0;
     endcase
-end
-
-rf_riscv reg_f(.clk_i(clk_i), 
-               .write_enable_i(!(read_data_o[30] || read_data_o[31])), 
-               .write_addr_i(read_data_o[4:0]), 
-               .read_addr1_i(read_data_o[22:18]), 
-               .read_addr2_i(read_data_o[17:13]), 
-               .write_data_i(wdi), 
-               .read_data1_o(a_to_rd1), 
-               .read_data2_o(b_to_rd2)
-);
-
-alu_rscv alu(.a(a_to_rd1), 
-             .b(b_to_rd2), 
-             .alu_op(read_data_o[27:23]), 
-             .flag(flag_o), 
-             .result(res_to_wd1)
-);
-
-instr_mem mem(.addr_i(PC), .read_data_o(read_data_o));
-
-assign out_o = a_to_rd1;
-
+    end
+    
+    rf_riscv rf(
+ .clk_i(clk_i),
+ .write_enable_i(write_enable_i),
+ .write_addr_i(read_data_o[4:0]),
+ .read_addr1_i(read_data_o[22:18]),
+ .read_addr2_i(read_data_o[17:13]),
+ .write_data_i(ws),
+ .read_data1_o(read_data1_o),
+ .read_data2_o(read_data2_o)
+  );
+  
+  assign alu_op_i = read_data_o[27:23];
+  
+  
+      alu_riscv alu 
+    (
+    .a_i(read_data1_o),
+    .b_i(read_data2_o),
+    .alu_op_i(alu_op_i),
+    .flag_o(flag_o),
+    .result_o(result_o)
+    );
+    
+    instr_mem instr
+    (
+    .addr_i(PC_o),
+    .read_data_o(read_data_o)
+    );
+    
+   fulladder32 add(
+            .a(PC_o),
+            .b(b),
+            .carry_in(0),
+            .s(res),
+            .carry_out()
+        );
+    
+    always_ff @(posedge clk_i) 
+    begin
+    if(rst_i)
+    PC_o <= 0;
+    else 
+    
+    PC_o <= res;
+    end
+    
+    always_comb 
+    begin
+    if((flag_o && read_data_o[30]) || read_data_o[31] )
+    b = { {22{read_data_o[12]}} , read_data_o[12:5] , 2'b0 };
+    else b = 32'd4;
+    end
+    
+    
+    
 endmodule

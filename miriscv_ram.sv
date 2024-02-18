@@ -1,3 +1,25 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 23.11.2023 04:25:00
+// Design Name: 
+// Module Name: miriscv_ram
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
 module miriscv_ram
 #(
   parameter RAM_SIZE      = 256, // bytes
@@ -40,7 +62,7 @@ module miriscv_ram
   assign instr_rdata_o = mem[(instr_addr_i % RAM_SIZE) / 4];
 
   always@(posedge clk_i) begin
-    if(!rst_n_i) begin
+    if(rst_n_i) begin
       data_rdata_o  <= 32'b0;
     end
     else if(data_req_i) begin
